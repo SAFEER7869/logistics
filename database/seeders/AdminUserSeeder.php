@@ -19,14 +19,14 @@ class AdminUserSeeder extends Seeder
             'id'=>'1',
             'first_name' => 'Super',
             'last_name' => 'Admin',
-            'email' => 'admin@hats.com',
+            'email' => 'admin@admin.com',
             'password' => Hash::make('12345678'),
             'phone' => '7878454512',
             'image' => '/img/users/1.png',
             'email_verified_at' => Carbon::now(),
         ];
 
-        // $user = User::create($input);
-        // $user->assignRole(RolesEnum::SUPERADMIN);
+        $user = User::create($input);
+        $user->assignRole(RolesEnum::ADMIN);
     }
 }

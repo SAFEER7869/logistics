@@ -16,7 +16,7 @@
 
 
     <meta name="description" content="" />
-    <title>@yield('title', 'Aethon Payroll')</title>
+    <title>@yield('title', 'Z Auto Transport')</title>
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{{asset('img/avatars/favicon.png')}}" />
 
@@ -49,6 +49,9 @@
     <link rel="stylesheet" href="{{asset('vendor/libs/datatables-bs5/datatables.bootstrap5.css')}}" />
     <link rel="stylesheet" href="{{asset('vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css')}}" />
     <link rel="stylesheet" href="{{asset('vendor/libs/datatables-checkboxes-jquery/datatables.checkboxes.css')}}" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{asset('css/customcss.css')}}" />
 
 <!-- Toastr CSS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
@@ -131,7 +134,7 @@
                     <script>
                       document.write(new Date().getFullYear());
                     </script>
-                    , made with ❤️ by <a href="https://aethon.digital/" target="_blank" class="footer-link">Aethon.digital</a>
+                    , made with ❤️ by <a href="https://nexvertisedigital.com/" target="_blank" class="footer-link">Nexvertise Digital</a>
                   </div>
 
                   </div>

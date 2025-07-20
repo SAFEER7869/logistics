@@ -10,4 +10,8 @@ class AdminDashboardController extends Controller
     public function  index(){
         return view('dashboard');
     }
+     public function  success(){
+        return view('client.success');
+    }
 }
+

@@ -62,6 +62,11 @@
     <!--? Config:  Mandatory theme config file contain global vars & default theme options, Set your preferred theme option in this file.  -->
     <script src="{{asset('js/config.js')}}"></script>
 
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{asset('css/customcss.css')}}" />
+
+
+
 
     <!-- push styles -->
     <style>
@@ -73,7 +78,26 @@
   </head>
 
   <body>
+  <div class="authentication-wrapper authentication-cover">
+      <!-- /Logo -->
+      <div class="authentication-inner row m-0">
+        <!-- /Left Text -->
+        <div class="d-none d-lg-flex col-lg-8 p-0">
+          <div class="auth-cover-bg auth-cover-bg-color d-flex justify-content-center align-items-center">
+            <img
+              src="{{asset('img/avatars/logo.png')}}"
+              alt="auth-login-cover"
+              class="my-5 auth-illustration"
+               />
+          </div>
+        </div>
+        <!-- /Left Text -->
+
+        <div class="d-flex flex-col col-12 col-lg-4 align-items-center justify-content-center authentication-bg p-sm-12 p-6">
+        <div class="w-px-400 mx-auto ">
     @yield('content')
+    </div>
+    </div>
 
     <!-- Core JS -->
     <!-- build:js assets/vendor/js/core.js -->
