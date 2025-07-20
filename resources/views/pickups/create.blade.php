@@ -23,21 +23,28 @@
 
 <form method="POST" action="{{route('pickups.store')}}">
   @csrf
+  <input type="hidden" id="pickup_lat" name="pickup_lat">
+  <input type="hidden" id="pickup_lon" name="pickup_lon">
+  <input type="hidden" id="drop_lat" name="drop_lat">
+  <input type="hidden" id="drop_lon" name="drop_lon">
+
   <div class="step active" id="step1">
     <div class="mb-3">
       <div class="section-title">Route</div>
       <div class="autocomplete-wrapper">
-        <input type="text" id="pickup_location" name="pickup_location" placeholder="From (ZIP or City, State)" class="form-control py-3" autocomplete="off" onblur="getDistanceAndQuote()" />
+        <input type="text" id="pickup_location" name="pickup_location" placeholder="From (ZIP or City, State)" class="form-control py-3" autocomplete="off" />
         <ul id="pickup_suggestions" class="suggestions-box"></ul>
       </div>
       <div class="autocomplete-wrapper">
-        <input type="text" id="drop_location" name="drop_location" placeholder="To (ZIP or City, State)" class="form-control py-3" autocomplete="off" onblur="getDistanceAndQuote()" />
+        <input type="text" id="drop_location" name="drop_location" placeholder="To (ZIP or City, State)" class="form-control py-3" autocomplete="off" />
         <ul id="drop_suggestions" class="suggestions-box"></ul>
       </div>
     </div>
 
     <div class="mb-3">
       <div class="section-title">Shipping</div>
+      <input type="number" id="car_year" name="car_year" placeholder="Car Year (e.g. 2021)" class="form-control py-3 mb-2" />
+      
       <select id="pickup_date_select" class="form-select py-3 mb-2">
         <option value="" selected disabled>Pickup Date</option>
         <option value="As soon as possible">As soon as possible</option>
@@ -47,8 +54,6 @@
       </select>
       <input type="hidden" id="pickup_date" name="pickup_date" />
       <input type="date" id="specific_date" class="form-control py-3 mt-2" style="display: none;" />
-
-     
 
       <select id="size_of_vehicle" name="size_of_vehicle" class="form-select py-3 mt-2" onchange="getDistanceAndQuote()">
         <option value="" selected disabled>Size of Car</option>
@@ -67,6 +72,9 @@
     </div>
 
     <div id="quote_result" class="text-center mt-4 fw-bold fs-5 text-success"></div>
+    <input type="hidden" id="estimated_price" name="estimated_price">
+
+    
     <button type="button" onclick="nextStep()" class="btn btn-submit py-3">Next</button>
   </div>
 
@@ -95,50 +103,95 @@
   function nextStep() { currentStep++; showStep(currentStep); }
   function prevStep() { currentStep--; showStep(currentStep); }
 
-  function calculateQuote(miles, carYear, vehicleSize, pickupDate, pickupState, dropState, cityPopulationLowPickup, cityPopulationLowDrop) {
-    let base = 0;
-    if (miles <= 100) base = 300;
-    else if (miles <= 200) base = 1.5 * miles;
-    else if (miles <= 500) base = 1.0 * miles;
-    else if (miles <= 1000) base = 0.75 * miles;
-    else base = 0.6 * miles;
+  function calculateQuote(miles, carYear, vehicleSize, pickupDate, pickupState, dropState, lowPopPickup, lowPopDrop) {
+  let base = 0;
 
-    if (carYear > 2020) base += 50;
-    if (cityPopulationLowPickup) base += miles <= 100 ? 0 : (miles <= 1000 ? 50 : 100);
-    if (cityPopulationLowDrop) base += miles <= 100 ? 0 : (miles <= 500 ? 50 : 100);
-    if (pickupDate === "Within 7 days") base += 25;
+  // Distance base
+  if (miles <= 100) base = 300;
+  else if (miles <= 200) base = miles * 1.5;
+  else if (miles <= 500) base = miles * 1.0;
+  else if (miles <= 1000) base = miles * 0.75;
+  else base = miles * 0.6;
 
-    const suvTypes = ["Small SUV", "Midsize SUV", "Large SUV", "Medium Pickup", "Large Pickup"];
-    if (suvTypes.includes(vehicleSize)) base += miles <= 500 ? 50 : 75;
+  // Add-on charges
+  if (carYear > 2020) base += 50;
 
-    const snowStates = ["ND","MT","WA","OR","ID","ME","VT","MN","IL","UT","WI"];
-    if (pickupDate.includes("March") || pickupDate.includes("December")) {
-      if (snowStates.includes(pickupState) || snowStates.includes(dropState)) base += 200;
-    }
-
-    const extraStates = ["NY","NH","RI","CT","NM","AZ","MD","NJ"];
-    if (extraStates.includes(pickupState) || extraStates.includes(dropState)) base += miles <= 500 ? 50 : 75;
-
-    if (snowStates.includes(pickupState) || snowStates.includes(dropState)) base += 150;
-    if (miles > 500) base += 50;
-
-    return base;
+  // City population conditions
+  if (lowPopPickup) {
+    if (miles <= 100) base += 0;
+    else if (miles <= 1000) base += 50;
+    else base += 100;
   }
 
-  function getDistanceAndQuote() {
+  if (lowPopDrop) {
+    if (miles <= 100) base += 0;
+    else if (miles <= 500) base += 50;
+    else base += 100;
+  }
+
+  // Pickup within 7 days
+  if (pickupDate === "Within 7 days") base += 25;
+
+  // SUV or pickup truck
+  const suvTypes = ["Small SUV", "Midsize SUV", "Large SUV", "Medium Pickup", "Large Pickup"];
+  if (suvTypes.includes(vehicleSize)) {
+    base += (miles <= 500) ? 50 : 75;
+  }
+
+  // March to Sept
+  const today = new Date();
+  const month = today.getMonth() + 1;
+  if (month >= 3 && month <= 9) base += 50;
+
+  // Special states
+  const snowStates = ["ND","MT","WA","OR","ID","ME","VT","MN","IL","UT","WI"];
+  const specialStates = ["NY","NH","RI","CT","NM","AZ","MD","NJ"];
+
+  if (snowStates.includes(pickupState) || snowStates.includes(dropState)) base += 150;
+  if ((pickupDate.includes("March") || pickupDate.includes("December")) &&
+      (snowStates.includes(pickupState) || snowStates.includes(dropState))) {
+    base += 200;
+  }
+
+  if (specialStates.includes(pickupState) || specialStates.includes(dropState)) {
+    base += (miles <= 500 ? 50 : 75);
+  }
+
+  return base;
+}
+
+
+  async function getDistanceAndQuote() {
     const size = document.getElementById("size_of_vehicle").value;
-    const year = parseInt(document.getElementById("car_year").value);
+    const year = parseInt(document.getElementById("car_year")?.value || 2020);
     const pickup = document.getElementById("pickup_location").value;
     const drop = document.getElementById("drop_location").value;
     const pickupState = pickup.split(",").pop()?.trim().toUpperCase();
     const dropState = drop.split(",").pop()?.trim().toUpperCase();
     const pickupDate = document.getElementById("pickup_date_select").value;
 
-    if (!pickup || !drop || !size || !year) return;
+    const pickupLat = document.getElementById("pickup_lat").value;
+    const pickupLon = document.getElementById("pickup_lon").value;
+    const dropLat = document.getElementById("drop_lat").value;
+    const dropLon = document.getElementById("drop_lon").value;
 
-    const miles = 350; // Replace with real distance
-    const quote = calculateQuote(miles, year, size, pickupDate, pickupState, dropState, true, true);
-    document.getElementById("quote_result").innerText = `Estimated Price: $${quote.toFixed(2)}`;
+    if (!pickup || !drop || !size || !year || !pickupLat || !pickupLon || !dropLat || !dropLon) return;
+
+    const url = `https://api.geoapify.com/v1/routing?waypoints=${pickupLat},${pickupLon}|${dropLat},${dropLon}&mode=drive&apiKey=b70212789c304f41a4194d3453f39890`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.features && data.features.length) {
+      const meters = data.features[0].properties.distance;
+      const miles = meters / 1609.34;
+
+      const quote = calculateQuote(miles, year, size, pickupDate, pickupState, dropState, true, true);
+
+      document.getElementById("quote_result").innerText = `Estimated Price: $${quote.toFixed(2)} (Distance: ${miles.toFixed(1)} mi)`;
+      document.getElementById("estimated_price").value = quote.toFixed(2);
+
+    }
   }
 
   function setupGeoapifyAutocomplete(inputId, suggestionsId) {
@@ -157,7 +210,20 @@
             const label = [props.postcode, props.city, props.state].filter(Boolean).join(", ");
             const li = document.createElement("li");
             li.textContent = label;
-            li.onclick = () => { input.value = label; suggestionsBox.innerHTML = ""; getDistanceAndQuote(); };
+            li.onclick = () => {
+              input.value = label;
+              suggestionsBox.innerHTML = "";
+              const lat = feature.geometry.coordinates[1];
+              const lon = feature.geometry.coordinates[0];
+              if (inputId === "pickup_location") {
+                document.getElementById("pickup_lat").value = lat;
+                document.getElementById("pickup_lon").value = lon;
+              } else {
+                document.getElementById("drop_lat").value = lat;
+                document.getElementById("drop_lon").value = lon;
+              }
+              getDistanceAndQuote();
+            };
             suggestionsBox.appendChild(li);
           });
         });

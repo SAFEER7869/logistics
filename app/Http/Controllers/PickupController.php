@@ -14,31 +14,97 @@ class PickupController extends Controller
         return view('pickups.index', compact('pickups'));
     }
 
+    // public function store(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'pickup_date' => 'nullable|string',
+    //         'pickup_location' => 'nullable|string',
+    //         'drop_location' => 'nullable|string',
+    //         'size_of_vehicle' => 'nullable|string',
+    //         'email' => 'nullable|email',
+    //         'contact' => 'nullable|string',
+    //         'extra_field_1' => 'nullable|string',
+    //         'extra_field_2' => 'nullable|string',
+    //     ]);
+
+    //     $data['pickup_id'] = $this->generatePickupId();
+
+    //     $pickup = Pickup::create($data);
+
+    //     if (!$pickup) {
+    //         return back()->with('error', 'Not Send.');
+    //     }
+
+    //     return view('redirect-script', [
+    //         'url' => 'https://zauto.nexvertise.com/pickup-confirmation/'
+    //     ]);
+    // }
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            'pickup_date' => 'nullable|string',
-            'pickup_location' => 'nullable|string',
-            'drop_location' => 'nullable|string',
-            'size_of_vehicle' => 'nullable|string',
-            'email' => 'nullable|email',
-            'contact' => 'nullable|string',
-            'extra_field_1' => 'nullable|string',
-            'extra_field_2' => 'nullable|string',
-        ]);
+{
+    $validated = $request->validate([
+        'pickup_location' => 'required|string|max:255',
+        'drop_location' => 'required|string|max:255',
+      
+        'pickup_date' => 'nullable|string|max:255',
+        'size_of_vehicle' => 'required|string|max:255',
+        'email' => 'nullable|email',
+        'contact' => 'nullable|string|max:20',
+        'pickup_lat' => 'nullable|numeric',
+        'pickup_lon' => 'nullable|numeric',
+        'drop_lat' => 'nullable|numeric',
+        'drop_lon' => 'nullable|numeric',
+    ]);
 
-        $data['pickup_id'] = $this->generatePickupId();
+    // Estimate distance (optional: store for future use)
+    $distance = null;
+    if ($request->pickup_lat && $request->pickup_lon && $request->drop_lat && $request->drop_lon) {
+        $lat1 = $request->pickup_lat;
+        $lon1 = $request->pickup_lon;
+        $lat2 = $request->drop_lat;
+        $lon2 = $request->drop_lon;
+        $distance = $this->haversine($lat1, $lon1, $lat2, $lon2);
+    }
 
-        $pickup = Pickup::create($data);
+    $pickup = new Pickup();
+    $pickup->pickup_location = $validated['pickup_location'];
+    $pickup->drop_location = $validated['drop_location'];
+ 
+    $pickup->pickup_date = $validated['pickup_date'];
+    $pickup->size_of_vehicle = $validated['size_of_vehicle'];
+    $pickup->email = $validated['email'];
+    $pickup->contact = $validated['contact'];
+    $pickup->pickup_lat = $request->pickup_lat;
+    $pickup->pickup_lon = $request->pickup_lon;
+    $pickup->drop_lat = $request->drop_lat;
+    $pickup->drop_lon = $request->drop_lon;
+    $pickup->estimated_miles = $distance;
+    $pickup->estimated_price = $request->estimated_price;
 
-        if (!$pickup) {
-            return back()->with('error', 'Not Send.');
-        }
 
-        return view('redirect-script', [
+    $pickup->save();
+
+    return view('redirect-script', [
             'url' => 'https://zauto.nexvertise.com/pickup-confirmation/'
         ]);
-    }
+}
+
+// Add this helper in the same controller
+private function haversine($lat1, $lon1, $lat2, $lon2)
+{
+    $earthRadius = 3958.8; // in miles
+
+    $dLat = deg2rad($lat2 - $lat1);
+    $dLon = deg2rad($lon2 - $lon1);
+
+    $a = sin($dLat/2) * sin($dLat/2) +
+         cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+         sin($dLon/2) * sin($dLon/2);
+
+    $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+
+    return $earthRadius * $c;
+}
+
 
     protected function generatePickupId(): string
     {
